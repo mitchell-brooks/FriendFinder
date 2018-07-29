@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <title>Friend Finder Home</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script src="https://code.jquery.com/jquery-3.3.1.min.js" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js" integrity="sha384-ZMP7rVo3mIykV+2+9J3UJ46jBk0WLaUAdn689aCwoqbBJiSnjAK/l8WvCWPIPm49" crossorigin="anonymous"></script>
+  <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.min.js" integrity="sha384-ChfqqxuZUCnJSK3+MXmPNIyE6ZbWh2IMqE241rYiqJxyMiZ6OW/JmZQ5stwEULTy" crossorigin="anonymous"></script>  
+
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.1/css/bootstrap.min.css" integrity="sha384-WskhaSGFgHYWDcbwN70/dfYBj47jz9qbsMId/iRN3ewGhXQFZCSftd1LZCfmhktB" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
+  <!-- <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap3-dialog/1.34.7/css/bootstrap-dialog.min.css"> -->
+
+  <!-- <link rel="stylesheet" type="text/css" media="screen" href="main.css" /> -->
+</head>
+<body>
+  
+
+  <div class="container">
+    <h2>Survey Questions:</h2>
+    <hr>
+    <h3>About You:</h3>
+    <div class="form-group">
+        <label for="friend-name"><h4>Name</h4></label>
+        <input type="text" class="form-control" id="friend-name">
+      </div>
+    <div class="form-group">
+        <label for="friend-photo"><h4>Photo</h4></label>
+        <input type="text"
+        class="form-control" id="friend-photo">
+    </div>
+    <hr>
+    <div class="col-md-12" id="surveyBody">
+      <!-- Questions populate here from script below -->
+    </div>
+    <div class="col-md-12">
+      <button type='submit' class='btn btn-primary submit' data-toggle='modal' data-target='#friendResults'>Submit</button>
+    </div>
+    </div>
+
+    </div>
+
+    <!-- Modal -->
+    <div id="friendResults" class="modal fade" role="dialog">
+        <div class="modal-dialog">
+      
+          <!-- Modal content-->
+          <div class="modal-content">
+            <div class="modal-header">
+              <button type="button" class="close" data-dismiss="modal">&times;</button>
+              <h4 class="modal-title">Congratulations!</h4>
+            </div>
+            <div class="modal-body text-align-center">
+              <!-- name and photo here -->
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+            </div>
+          </div>
+      
+        </div>
+      </div>
+  </div>
+
+    <!-- Button trigger modal -->
+  <script type="text/javascript">
+  var qArray=[
+  "I am the life of the party.",
+  "I feel little concern for others.",
+  "I am always prepared.",
+  "I get stressed out easily.",
+  "I have a rich vocabulary.",
+  "I don't talk a lot.",
+  "I am interested in people.",
+  "I leave my belongings around.",
+  "I am relaxed most of the time.",
+  "I have difficulty understanding abstract ideas."
+];
+for (var i = 1; i<=qArray.length; i++){
+$("#surveyBody").append(
+  '<h3>Question ' + i + '</h3>  <p>' + qArray[i-1] + '</p>  <select name="q' + i+ '" id="q' + i + '">  <option value="1">1 - Strongly disagree</option>  <option value="2">2 - Slightly disagree</option>  <option value="3">3 - Neither agree nor disagree</option> <option value="4">4 - Slightly agree</option> <option value="5">5 - Strongly agree</option> </select>'
+);
+}
+var currentURL = window.location.origin;
+
+var newFriend = {};
+var ansArray = [];
+  $(".submit").on("click", function(event) {
+    event.preventDefault();
+    var friendName = document.getElementById('friend-name').value;
+    var friendPhoto = document.getElementById('friend-photo').value;
+    ansArray = [];
+    for (var i=1; i<11; i++){
+      var answer = document.getElementById('q'+ i).value;
+      ansArray.push(parseInt(answer));
+
+    }
+    newFriend = {
+      friendName: friendName,
+      photo: friendPhoto,
+      scores: ansArray
+    };
+    console.log(newFriend);
+
+  $.ajax({ 
+    url: currentURL + "/api/friends", 
+    method: "GET" })
+    .then(function(friendData) {
+      console.log(friendData.length);
+      var diffTotals = [];
+        for (var i=0; i<friendData.length; i++){
+          var compArr = friendData[i].scores;
+          var totalDiff = 0
+          console.log(compArr);
+          // console.log(friendData[i]);
+          for (var j=0; j<compArr.length; j++){
+            var indexDiff = Math.abs(compArr[j] - newFriend.scores[j])
+            totalDiff += indexDiff;
+          }
+          diffTotals.push(totalDiff);
+        }
+        console.log(diffTotals)
+        var lowScore = 40
+        for (var k=0; k<diffTotals.length; k++){
+          if (diffTotals[k]<lowScore){
+            lowScore = diffTotals[k]
+          }
+        }
+        var winIndex = diffTotals.indexOf(lowScore);
+        var winner = friendData[winIndex];
+        console.log(lowScore);
+        console.log(winIndex);
+        console.log(winner);
+        $(".modal-body").html('<h3>Your best match is:</h3><p>' + winner.friendName + '</p><p><img class="img-fluid" src=' + winner.photo + '></p>')
+        
+        $.post("/api/friends", newFriend,
+          function(data) {
+
+    console.log('success');
+            
+      });
+   });
+
+});
+
+
+  </script>
+</body>
+</html>
